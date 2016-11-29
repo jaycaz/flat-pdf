@@ -11,42 +11,85 @@
     body {
       height: 100%;
     }
+    #toolbar{
+      margin: 20px;
+    }
     #viz {
       height: 95%;
     }
+    #npage-slider {
+      ui-slider-range
+    }
+    #npage-handle {
+      width: 3em;
+      height: 1.6em;
+      top: 50%;
+      margin-top: -.8em;
+      text-align: center;
+      line-height: 1.6em;
+    }
+  }
   </style>
-  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 </head>
 
 <body>
-  <div id="bar"></div>
+  <div id="toolbar">
+    <div id="npage-label"></div>
+    <div id="npage-slider">
+      <div id="npage-handle" class="ui-slider-handle"></div>
+    </div>
+  </div>
   <div id="viz"></div>
 </body>
 
 
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script>
+
+var npages = 500
+$( function() {
+  var handle = $( "#npage-handle" );
+  $( "#npage-slider" ).slider({
+    min: 1,
+    max: 1000,
+    create: function() {
+      handle.text( $( this ).slider( "value" ) );
+    },
+    slide: function( event, ui ) {
+      handle.text( ui.value );
+      npages = ui.value;
+      console.log( ui.value );
+      update();
+    }
+  });
+});
+
 var svg = d3.select("#viz")
   .append("svg")
   .attr("width", "100%")
   .attr("height", "100%")
   .style("padding", "10px");
 
-for(var i = 0; i < 500; i++)
-{
-  svg.append('rect')
-    .attr('x', (i%30) * 30)
-    .attr('y', parseInt(i/30) * 50)
-    .attr('width', 25)
-    .attr('height', 37)
-    .attr('rx', 2)
-    .attr('ry', 2)
-    .style('stroke', '#000')
-    .style('fill', '#e2e3e3');
+function update() {
+  svg.selectAll('rect').remove();
+  for(var i = 0; i < npages; i++)
+  {
+    svg.append('rect')
+      .attr('x', (i/30) * 30)
+      .attr('y', parseInt(i%30) * 50)
+      .attr('width', 25)
+      .attr('height', 37)
+      .attr('rx', 2)
+      .attr('ry', 2)
+      .style('stroke', '#000')
+      .style('fill', '#e2e3e3');
+  }
 }
-
 var bb = svg.node().getBBox();
 
 </script>
-
 </body>
 </html>
