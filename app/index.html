@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>scroll.me</title> 
+  <meta name="author" content="Jordan Cazamias | https://github.com/jaycaz">
+  <style type="text/css">
+    html {
+      height: 100%;
+    }
+    body {
+      height: 100%;
+    }
+    #viz {
+      height: 95%;
+    }
+  </style>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+</head>
+
+<body>
+  <div id="bar"></div>
+  <div id="viz"></div>
+</body>
+
+
+<script>
+var svg = d3.select("#viz")
+  .append("svg")
+  .attr("width", "100%")
+  .attr("height", "100%")
+  .style("padding", "10px");
+
+for(var i = 0; i < 500; i++)
+{
+  svg.append('rect')
+    .attr('x', (i%30) * 30)
+    .attr('y', parseInt(i/30) * 50)
+    .attr('width', 25)
+    .attr('height', 37)
+    .attr('rx', 2)
+    .attr('ry', 2)
+    .style('stroke', '#000')
+    .style('fill', '#e2e3e3');
+}
+
+var bb = svg.node().getBBox();
+
+</script>
+
+</body>
+</html>
