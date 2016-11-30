@@ -49,7 +49,8 @@
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script>
 
-var npages = 500
+var pages = [];
+var npages = 0;
 $( function() {
   var handle = $( "#npage-handle" );
   $( "#npage-slider" ).slider({
@@ -57,11 +58,11 @@ $( function() {
     max: 1000,
     create: function() {
       handle.text( $( this ).slider( "value" ) );
+      setNpages($(this).slider("value"));
     },
     slide: function( event, ui ) {
       handle.text( ui.value );
-      npages = ui.value;
-      console.log( ui.value );
+      setNpages(ui.value);
       update();
     }
   });
@@ -73,20 +74,56 @@ var svg = d3.select("#viz")
   .attr("height", "100%")
   .style("padding", "10px");
 
-function update() {
-  svg.selectAll('rect').remove();
-  for(var i = 0; i < npages; i++)
+function setNpages(n)
+{
+  // Depending on new value of npages, push/pop new pages to end
+  if(n > npages)
   {
-    svg.append('rect')
-      .attr('x', (i/30) * 30)
-      .attr('y', parseInt(i%30) * 50)
-      .attr('width', 25)
-      .attr('height', 37)
-      .attr('rx', 2)
-      .attr('ry', 2)
-      .style('stroke', '#000')
-      .style('fill', '#e2e3e3');
+    for(var i = 0; i < (n-npages); i++)
+    {
+      pages.push({})
+    }
   }
+  else if(n < npages)
+  {
+    for(var i = 0; i < (npages-n); i++)
+    {
+      pages.pop();
+    }
+  }
+  npages = n;
+}
+
+function update() {
+  // svg.selectAll('rect').remove();
+  // for(var i = 0; i < npages; i++)
+  // {
+  //   svg.append('rect')
+  //     .attr('x', (i/30) * 30)
+  //     .attr('y', parseInt(i%30) * 50)
+  //     .attr('width', 25)
+  //     .attr('height', 37)
+  //     .attr('rx', 2)
+  //     .attr('ry', 2)
+  //     .style('stroke', '#000')
+  //     .style('fill', '#e2e3e3');
+  // }
+
+  var selection = svg.selectAll('rect')
+    .data(pages);
+
+  selection.enter()
+    .append('rect')
+    .attr('x', function(d,i) { return parseInt(i/30) * 30; })
+    .attr('y', function(d,i) { return parseInt(i%30) * 50; })
+    .attr('width', 25)
+    .attr('height', 37)
+    .attr('rx', 2)
+    .attr('ry', 2)
+    .style('stroke', '#000')
+    .style('fill', '#e2e3e3');
+
+  selection.exit().remove();
 }
 var bb = svg.node().getBBox();
 
