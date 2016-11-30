@@ -1,0 +1,25 @@
+html {
+    height: 100%;
+}
+body {
+    height: 100%;
+}
+#toolbar{
+    margin: 20px;
+}
+#viz {
+    height: 95%;
+}
+
+#npage-slider, #currpage-slider {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+#npage-handle, #currpage-handle {
+    width: 3em;
+    height: 1.6em;
+    top: 50%;
+    margin-top: -.8em;
+    text-align: center;
+    line-height: 1.6em;
+}

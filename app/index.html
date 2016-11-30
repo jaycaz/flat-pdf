@@ -4,42 +4,34 @@
   <meta charset="utf-8">
   <title>scroll.me</title> 
   <meta name="author" content="Jordan Cazamias | https://github.com/jaycaz">
-  <style type="text/css">
-    html {
-      height: 100%;
-    }
-    body {
-      height: 100%;
-    }
-    #toolbar{
-      margin: 20px;
-    }
-    #viz {
-      height: 95%;
-    }
-    #npage-slider {
-      ui-slider-range
-    }
-    #npage-handle {
-      width: 3em;
-      height: 1.6em;
-      top: 50%;
-      margin-top: -.8em;
-      text-align: center;
-      line-height: 1.6em;
-    }
-  }
-  </style>
+  <link rel="stylesheet" type="text/css" href="main.css">
 </head>
 
 <body>
   <div id="toolbar">
     <div id="npage-label"></div>
-    <div id="npage-slider">
+    <p>Num Pages</p>
+    <div id="npage-slider" class="ui-slider">
       <div id="npage-handle" class="ui-slider-handle"></div>
     </div>
+    <p>Current Page</p>
+    <div id="currpage-slider" class="ui-slider">
+      <div id="currpage-handle" class="ui-slider-handle"></div>
+    </div>
   </div>
-  <div id="viz"></div>
+  <div id="viz">
+      <div class="section group">
+      <div id="panel-left" class="col span_1_of_3">
+      This is column 1
+      </div>
+      <div id="panel-center" class="col span_1_of_3">
+      This is column 2
+      </div>
+      <div id="panel-right" class="col span_1_of_3">
+      This is column 3
+      </div>
+    </svg>
+  </div>
 </body>
 
 
@@ -51,18 +43,38 @@
 
 var pages = [];
 var npages = 0;
-$( function() {
-  var handle = $( "#npage-handle" );
-  $( "#npage-slider" ).slider({
+var currPage = 0;
+$(function() {
+  var handle = $("#npage-handle");
+  $("#npage-slider").slider({
     min: 1,
     max: 1000,
     create: function() {
-      handle.text( $( this ).slider( "value" ) );
+      handle.text($(this).slider("value"));
       setNpages($(this).slider("value"));
+      update();
     },
-    slide: function( event, ui ) {
-      handle.text( ui.value );
+    slide: function(event, ui) {
+      handle.text(ui.value);
       setNpages(ui.value);
+      // $('#currpage-slider').max = npages;
+      update();
+    }
+  });
+});
+
+$(function() {
+  var handle = $("#currpage-handle");
+  $("#currpage-slider").slider({
+    min: 1,
+    max: 1000,
+    create: function() {
+      handle.text($(this).slider("value"));
+      currPage = $(this).slider("value");
+    },
+    slide: function(event, ui) {
+      handle.text(ui.value);
+      currPage = ui.value;
       update();
     }
   });
@@ -95,19 +107,6 @@ function setNpages(n)
 }
 
 function update() {
-  // svg.selectAll('rect').remove();
-  // for(var i = 0; i < npages; i++)
-  // {
-  //   svg.append('rect')
-  //     .attr('x', (i/30) * 30)
-  //     .attr('y', parseInt(i%30) * 50)
-  //     .attr('width', 25)
-  //     .attr('height', 37)
-  //     .attr('rx', 2)
-  //     .attr('ry', 2)
-  //     .style('stroke', '#000')
-  //     .style('fill', '#e2e3e3');
-  // }
 
   var selection = svg.selectAll('rect')
     .data(pages);
