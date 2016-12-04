@@ -2,7 +2,7 @@ var pdfjs = require('pdfjs-dist');
 var d3 = require('d3');
 var $ = require('jquery');
 var fs = require('fs');
-// var slider = require('d3-slider');
+var slider = require('d3.slider');
 
 var data = new Uint8Array(fs.readFileSync('BillinghurstBookMarch2016.pdf'))
 pdfjs.getDocument(data).then(function (pdfDoc) {
