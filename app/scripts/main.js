@@ -48,6 +48,8 @@ var PAGES_PER_COL = 30;
 var FULL_PAGE_WIDTH = 820;
 var FULL_PAGE_HEIGHT = 1060;
 
+
+// Handle reading in dropped PDF
 function readPDF(data) {
   PDFJS.getDocument(data).then( function (doc) {
     console.log('Loaded pdf, number of pages: ' + doc.numPages);
@@ -55,9 +57,6 @@ function readPDF(data) {
     setNpages(doc.numPages);
     update();
     currPage = 0;
-
-    // Populate data with images of the pdf file
-
   })
 }
 
@@ -70,46 +69,9 @@ var svg = d3.select("#viz")
 var canvas = svg.append('div')
   .attr("id", "pdf-container")
   .append("canvas")
-  .attr("id", "pdf-canvas")
-  .attr("width", FULL_PAGE_WIDTH)
-  .attr("height", FULL_PAGE_HEIGHT);
-
-// Jquery UI
-$(function() {
-  var handle = $("#npage-handle");
-  $("#npage-slider").slider({
-    min: 1,
-    max: 100,
-    create: function() {
-      handle.text($(this).slider("value"));
-      setNpages($(this).slider("value"));
-      update();
-    },
-    slide: function(event, ui) {
-      handle.text(ui.value);
-      setNpages(ui.value);
-      update();
-    }
-  });
-});
-
-$(function() {
-  var handle = $("#currpage-handle");
-  $("#currpage-slider").slider({
-    min: 1,
-    max: 100,
-    create: function() {
-      handle.text($(this).slider("value"));
-      currPage = $(this).slider("value");
-      update();
-    },
-    slide: function(event, ui) {
-      handle.text(ui.value);
-      currPage = ui.value;
-      update();
-    }
-  });
-});
+  .attr("id", "pdf-canvas");
+  // .attr("width", FULL_PAGE_WIDTH)
+  // .attr("height", FULL_PAGE_HEIGHT);
 
 function setNpages(n)
 {
@@ -131,6 +93,26 @@ function setNpages(n)
   // $('#npages-slider').slider( "option", "value", n);
   // $('#currpage-handle').slider( "option", "max", n);
   npages = n;
+
+  // Initalize current page slider
+  $(function() {
+    var handle = $("#currpage-handle");
+    $("#currpage-slider").slider({
+      min: 1,
+      max: n,
+      create: function() {
+        handle.text($(this).slider("value"));
+        currPage = $(this).slider("value")-1;
+        update();
+      },
+      slide: function(event, ui) {
+        handle.text(ui.value);
+        currPage = ui.value-1;
+        update();
+      }
+    });
+  });
+
 }
 
 // Get position and dimensions of pages.
@@ -188,22 +170,34 @@ function update() {
     .style('stroke', '#000')
     .style('fill', '#e2e3e3');
 
+  // Update PDF canvas with new page
   if(pdf)
   {
     d3.select('#pdf-canvas')
       .datum(currPage)
       .each(function(d) {
-        page = parseInt(d) + 1;
-        console.log("Getting page: " + page);
-        pdf.getPage(page)
+        var p = parseInt(d) + 1;
+        console.log("Getting page: " + p);
+
+        // Fetch and render currPage
+        pdf.getPage(p)
         .then(function (page) {
-          c = document.getElementById('pdf-canvas');
-          c.height = FULL_PAGE_HEIGHT;
-          c.width = FULL_PAGE_WIDTH;
-          context = c.getContext('2d');
-          renderContext = {
+          var viewport = page.getViewport(1);
+          var c = document.getElementById('pdf-canvas');
+          c.height = viewport.height;
+          c.width = viewport.width;
+          var context = c.getContext('2d');
+          var pageTimestamp = new Date().getTime();
+          var timestamp = pageTimestamp;
+          var renderContext = {
             canvasContext: context,
-            viewport: {width: FULL_PAGE_WIDTH, height: FULL_PAGE_HEIGHT}
+            viewport: viewport,
+            continueCallback: function(cont) {
+              if(timestamp != pageTimestamp) {
+                return;
+              }
+              cont();
+            }
           };
           page.render(renderContext);
         })
@@ -222,5 +216,3 @@ function update() {
 
   selection.exit().remove();
 }
-var bb = svg.node().getBBox();
-
