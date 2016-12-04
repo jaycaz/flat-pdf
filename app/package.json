@@ -4,13 +4,10 @@
   "description": "PDF Reader & Visualizer in one",
   "main": "scripts/main.js",
   "dependencies": {
-    "beefy": "^2.1.8",
-    "browserify": "^13.1.1",
     "d3": "^4.4.0",
-    "d3-slider": "https://github.com/MasterMaps/d3-slider.git",
+    "dropzone": "^4.3.0",
     "jquery": "^3.1.1",
-    "jquery-ui": "^1.12.1",
-    "pdfjs-dist": "^1.6.359"
+    "pdfjs-dist": "^1.6.361"
   },
   "devDependencies": {},
   "scripts": {
@@ -25,10 +22,5 @@
   "bugs": {
     "url": "https://github.com/jaycaz/scroll.me/issues"
   },
-  "homepage": "https://github.com/jaycaz/scroll.me#readme",
-  "dependencies": {
-    "d3": "^4.4.0",
-    "jquery": "^3.1.1",
-    "pdfjs-dist": "^1.6.361"
-  }
+  "homepage": "https://github.com/jaycaz/scroll.me#readme"
 }

@@ -11,6 +11,13 @@ body {
     height: 95%;
 }
 
+#pdf-container {
+    position: relative;
+    display: inline-block;
+    width: auto;
+    height: auto;
+}
+
 #npage-slider, #currpage-slider {
     margin-top: 10px;
     margin-bottom: 10px;

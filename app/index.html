@@ -7,7 +7,7 @@
   <link rel="stylesheet" type="text/css" href="main.css">
 </head>
 
-<body>
+<!-- <body>
   <div id="toolbar">
     <div id="npage-label"></div>
     <p>Num Pages</p>
@@ -19,27 +19,30 @@
       <div id="currpage-handle" class="ui-slider-handle"></div>
     </div>
   </div>
+  <form action="/file-upload"
+      class="dropzone"
+      id="pdf-dropzone"></form>
   <div id="viz">
-<!--     <svg>
-      <div class="section group">
-      <div id="panel-left" class="col span_1_of_3">
-      This is column 1
-      </div>
-      <div id="panel-center" class="col span_1_of_3">
-      This is column 2
-      </div>
-      <div id="panel-right" class="col span_1_of_3">
-      This is column 3
-      </div>
-    </svg>
- -->
   </div>
+</body>
+ -->
+
+<body>
+  <div id="pdf-container">
+    <canvas id="pdf-canvas"></canvas>
+  </div>
+  <form action="/file-upload"
+      class="dropzone"
+      id="pdf-dropzone"></form>
 </body>
 
 
-<!-- <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"> -->
-<!-- <script src="https://code.jquery.com/jquery-1.12.4.js"></script> -->
-<!-- <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script> -->
-<script src="scripts/bundle.js"></script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="./scripts/dropzone.js" charset="utf-8"></script>
+<script src="./scripts/pdfjs/build/pdf.js" charset="utf-8"></script>
+<script src="scripts/main.js"></script>
 </body>
 </html>

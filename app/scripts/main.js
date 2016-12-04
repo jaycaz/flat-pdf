@@ -1,13 +1,37 @@
-var pdfjs = require('pdfjs-dist');
-var d3 = require('d3');
-var $ = require('jquery');
-var fs = require('fs');
-var slider = require('d3.slider');
+var pdf;
 
-var data = new Uint8Array(fs.readFileSync('BillinghurstBookMarch2016.pdf'))
-pdfjs.getDocument(data).then(function (pdfDoc) {
-  console.log('Loaded pdf, number of pages: ' + pdfDoc.numPages);
-})
+Dropzone.options.pdfDropzone = {
+  paramName: "file", // The name that will be used to transfer the file
+  maxFilesize: 100, // MB
+  accept: function(file, done) {
+    var reader = new FileReader();
+    reader.onloadstart = function(event) {
+      console.log("loading");
+    }
+
+    reader.onload = function(event) {
+      var contents = event.target.result,
+          error    = event.target.error;
+
+      if(error != null) {
+        console.error("File could not be read, code: " + error.code);
+      }
+      // } else {
+      //   console.log("Contents: " + contents);
+      // }
+
+      readPDF(new Uint8Array(contents));
+    }
+    reader.readAsArrayBuffer(file);
+
+    done("ay boiiii");
+  }
+};
+
+// var data = new Uint8Array(fs.readFileSync('BillinghurstBookMarch2016.pdf'))
+// PDFJS.getDocument(data).then(function (pdfDoc) {
+//   console.log('Loaded pdf, number of pages: ' + pdfDoc.numPages);
+// })
 
 
 var pages = [];
@@ -18,11 +42,24 @@ var currPage = 0;
 // I know this is probably not the JS way to do it, sue me
 var PAGE_WIDTH = 25;
 var PAGE_HEIGHT = 37;
-var PAGE_SHIFT_X = 30;
-var PAGE_SHIFT_Y = 50;
+var PAGE_SHIFT_X = 40;
+var PAGE_SHIFT_Y = 37;
 var PAGES_PER_COL = 30;
 var FULL_PAGE_WIDTH = 820;
 var FULL_PAGE_HEIGHT = 1060;
+
+function readPDF(data) {
+  PDFJS.getDocument(data).then( function (doc) {
+    console.log('Loaded pdf, number of pages: ' + doc.numPages);
+    pdf = doc;
+    setNpages(doc.numPages);
+    update();
+    currPage = 0;
+
+    // Populate data with images of the pdf file
+
+  })
+}
 
 var svg = d3.select("#viz")
   .append("svg")
@@ -30,71 +67,49 @@ var svg = d3.select("#viz")
   .attr("height", "100%")
   .style("padding", "10px");
 
-var npageHandle = $('#npage-handle');
-// var npageSlider = d3.select('#npage-slider')
-//   .call(slider()
-//   .axis(true)
-//   .min(1)
-//   .max(1000)
-//   .on("slide", function(evt, value)
-//     {
-//       npageHandle.text(parseInt(value));
-//       setNpages(parseInt(value));
-//       // $('#currpage-slider').max = npages;
-//       update();
-//     }));
-
-var currpageHandle = $('#currpage-handle');
-// var currpageSlider = d3.select('#currpage-slider')
-//   .call(slider()
-//   .axis(true)
-//   .min(1)
-//   .max(1000)
-//   .on("slide", function(evt, value)
-//     {
-//       currpageHandle.text(parseInt(value));
-//       currPage = parseInt(value);
-//       update();
-//     }));
-
+var canvas = svg.append('div')
+  .attr("id", "pdf-container")
+  .append("canvas")
+  .attr("id", "pdf-canvas")
+  .attr("width", FULL_PAGE_WIDTH)
+  .attr("height", FULL_PAGE_HEIGHT);
 
 // Jquery UI
-// $(function() {
-//   var handle = $("#npage-handle");
-//   $("#npage-slider").slider({
-//     min: 1,
-//     max: 1000,
-//     create: function() {
-//       handle.text($(this).slider("value"));
-//       setNpages($(this).slider("value"));
-//       update();
-//     },
-//     slide: function(event, ui) {
-//       handle.text(ui.value);
-//       setNpages(ui.value);
-//       // $('#currpage-slider').max = npages;
-//       update();
-//     }
-//   });
-// });
+$(function() {
+  var handle = $("#npage-handle");
+  $("#npage-slider").slider({
+    min: 1,
+    max: 100,
+    create: function() {
+      handle.text($(this).slider("value"));
+      setNpages($(this).slider("value"));
+      update();
+    },
+    slide: function(event, ui) {
+      handle.text(ui.value);
+      setNpages(ui.value);
+      update();
+    }
+  });
+});
 
-// $(function() {
-//   var handle = $("#currpage-handle");
-//   $("#currpage-slider").slider({
-//     min: 1,
-//     max: 1000,
-//     create: function() {
-//       handle.text($(this).slider("value"));
-//       currPage = $(this).slider("value");
-//       update();
-//     },
-//     slide: function(event, ui) {
-//       handle.text(ui.value);
-//       currPage = ui.value;
-//       update();
-//     }
-//   });
-// });
+$(function() {
+  var handle = $("#currpage-handle");
+  $("#currpage-slider").slider({
+    min: 1,
+    max: 100,
+    create: function() {
+      handle.text($(this).slider("value"));
+      currPage = $(this).slider("value");
+      update();
+    },
+    slide: function(event, ui) {
+      handle.text(ui.value);
+      currPage = ui.value;
+      update();
+    }
+  });
+});
 
 function setNpages(n)
 {
@@ -103,7 +118,7 @@ function setNpages(n)
   {
     for(var i = 0; i < (n-npages); i++)
     {
-      pages.push({})
+      pages.push({});
     }
   }
   else if(n < npages)
@@ -113,6 +128,8 @@ function setNpages(n)
       pages.pop();
     }
   }
+  // $('#npages-slider').slider( "option", "value", n);
+  // $('#currpage-handle').slider( "option", "max", n);
   npages = n;
 }
 
@@ -166,10 +183,42 @@ function update() {
     .attr('y', getPageY)
     .attr('width', getPageW)
     .attr('height', getPageH)
-    .attr('rx', 2)
-    .attr('ry', 2)
+    .attr('rx', 1)
+    .attr('ry', 1)
     .style('stroke', '#000')
     .style('fill', '#e2e3e3');
+
+  if(pdf)
+  {
+    d3.select('#pdf-canvas')
+      .datum(currPage)
+      .each(function(d) {
+        page = parseInt(d) + 1;
+        console.log("Getting page: " + page);
+        pdf.getPage(page)
+        .then(function (page) {
+          c = document.getElementById('pdf-canvas');
+          c.height = FULL_PAGE_HEIGHT;
+          c.width = FULL_PAGE_WIDTH;
+          context = c.getContext('2d');
+          renderContext = {
+            canvasContext: context,
+            viewport: {width: FULL_PAGE_WIDTH, height: FULL_PAGE_HEIGHT}
+          };
+          page.render(renderContext);
+        })
+        .catch(function (reason) {
+          console.error('Page could not be rendered: ' + reason);
+        });
+      });
+
+    // Position pdf to match current page rect
+    p = selection.filter(function(d,i) {return i == currPage;});
+
+    // d3.select("#pdf-container")
+    //   .style('left', p.attr('x'))
+    //   .style('top', p.attr('y'));
+  }
 
   selection.exit().remove();
 }
