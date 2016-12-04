@@ -1,9 +1,13 @@
-// var requirejs = require('requirejs')
 var pdfjs = require('pdfjs-dist');
 var d3 = require('d3');
 var $ = require('jquery');
-// var jui = require('jquery-ui');
-var slider = require('d3-slider');
+var fs = require('fs');
+// var slider = require('d3-slider');
+
+var data = new Uint8Array(fs.readFileSync('BillinghurstBookMarch2016.pdf'))
+pdfjs.getDocument(data).then(function (pdfDoc) {
+  console.log('Loaded pdf, number of pages: ' + pdfDoc.numPages);
+})
 
 
 var pages = [];
@@ -27,32 +31,34 @@ var svg = d3.select("#viz")
   .style("padding", "10px");
 
 var npageHandle = $('#npage-handle');
-var npageSlider = d3.select('#npage-slider')
-  .call(slider()
-  .axis(true)
-  .min(1)
-  .max(1000)
-  .on("slide", function(evt, value)
-    {
-      npageHandle.text(value);
-      setNpages(value);
-      // $('#currpage-slider').max = npages;
-      update();
-    }));
+// var npageSlider = d3.select('#npage-slider')
+//   .call(slider()
+//   .axis(true)
+//   .min(1)
+//   .max(1000)
+//   .on("slide", function(evt, value)
+//     {
+//       npageHandle.text(parseInt(value));
+//       setNpages(parseInt(value));
+//       // $('#currpage-slider').max = npages;
+//       update();
+//     }));
 
 var currpageHandle = $('#currpage-handle');
-var currpageSlider = d3.select('#currpage-slider')
-  .call(slider()
-  .axis(true)
-  .min(1)
-  .max(1000)
-  .on("slide", function(evt, value)
-    {
-      currpageHandle.text(value);
-      currPage = value;
-      update();
-    }));
+// var currpageSlider = d3.select('#currpage-slider')
+//   .call(slider()
+//   .axis(true)
+//   .min(1)
+//   .max(1000)
+//   .on("slide", function(evt, value)
+//     {
+//       currpageHandle.text(parseInt(value));
+//       currPage = parseInt(value);
+//       update();
+//     }));
 
+
+// Jquery UI
 // $(function() {
 //   var handle = $("#npage-handle");
 //   $("#npage-slider").slider({
