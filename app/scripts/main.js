@@ -3,6 +3,8 @@ var pdf;
 Dropzone.options.pdfDropzone = {
   paramName: "file", // The name that will be used to transfer the file
   maxFilesize: 100, // MB
+  dictDefaultMessage: "Upload any PDF to make it into a scroll",
+  previewTemplate: '<div></div>',
   accept: function(file, done) {
     var reader = new FileReader();
     reader.onloadstart = function(event) {
@@ -42,7 +44,7 @@ var PAGE_WIDTH = 25;
 var PAGE_HEIGHT = 37;
 var PAGE_SHIFT_X = 40;
 var PAGE_SHIFT_Y = 37;
-var PAGES_PER_COL = 30;
+var PAGES_PER_COL = 20;
 var FULL_PAGE_WIDTH = 820;
 var FULL_PAGE_HEIGHT = 1060;
 
@@ -67,7 +69,8 @@ function readPDF(data) {
     .style("display", "inline-block")
     .style("z-index", "1")
     .append("canvas")
-    .attr("id", "pdf-canvas");
+    .attr("id", "pdf-canvas")
+    .style("padding", "2px");
 
   }
 
@@ -75,7 +78,7 @@ function readPDF(data) {
     .append("svg")
     .attr("id", "viz-svg")
     .attr("width", "100%")
-    .attr("height", "100%")
+    .attr("height", FULL_PAGE_HEIGHT)
     .style("padding", "10px");
 
 //   #pdf-container {
@@ -197,14 +200,14 @@ function update() {
         // Fetch and render currPage
         pdf.getPage(p)
         .then(function (page) {
-          // Find scale to fill rect with page
-          var viewport = page.getViewport(1);
-          FULL_PAGE_WIDTH
-          sx = FULL_PAGE_WIDTH / viewport.x;
-          sy = FULL_PAGE_HEIGHT / viewport.y;
 
-          var scale = Math.min(sx, sy);
+          //Resize PDF viewport to fit canvas
+          //TODO: Make the border not a magic number
           var viewport = page.getViewport(1);
+          sx = (FULL_PAGE_WIDTH - 4) / viewport.width;
+          sy = (FULL_PAGE_HEIGHT - 4) / viewport.height;
+          viewport = page.getViewport(Math.min(sx,sy))
+
           var c = document.getElementById('pdf-canvas');
           c.height = viewport.height
           c.width = viewport.width;
@@ -229,16 +232,20 @@ function update() {
       });
 
     // Position pdf to match current page rect
-    s = $("#viz-svg").offset();
+    s = $("#viz-svg");
     p = selection.filter(function(d,i) {return i == currPage;});
     console.log("p: " + p);
     c = d3.select("#pdf-container");
 
-    console.log("moving pdf container to (" + (s.left + parseInt(p.attr('x')))
-                + ", " + (s.top + parseInt(p.attr('y'))) + ")");
+    cleft = (s.offset().left + (s.outerWidth(true) - s.width()) / 2
+      + parseInt(p.attr('x'))) + "px";
+    ctop = (s.offset().top + (s.outerHeight(true) - s.height()) / 2
+      + parseInt(p.attr('y'))) + "px";
 
-    c.style('left', (s.left + parseInt(p.attr('x'))) + "px")
-    c.style('top', (s.top + parseInt(p.attr('y'))) + "px");
+    console.log("moving pdf container to (" + cleft + ", " + ctop + ")");
+
+    c.style('left', cleft);
+    c.style('top', ctop);
 
     console.log("pdf container now at (" + c.style("left") + ", " + c.style("top") + ")");
   }
