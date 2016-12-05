@@ -23,8 +23,6 @@ Dropzone.options.pdfDropzone = {
       readPDF(new Uint8Array(contents));
     }
     reader.readAsArrayBuffer(file);
-
-    done("ay boiiii");
   }
 };
 
@@ -58,18 +56,35 @@ function readPDF(data) {
     update();
     currPage = 0;
   })
-}
 
-var svg = d3.select("#viz")
-  .append("svg")
-  .attr("width", "100%")
-  .attr("height", "100%")
-  .style("padding", "10px");
+  // Create PDF canvas for placement
+  var canvas = d3.select("#viz")
+    .append('div')
+    .attr("id", "pdf-container")
+    .style("position", "absolute")
+    .style("left", "0")
+    .style("top", "0")
+    .style("display", "inline-block")
+    .style("z-index", "1")
+    .append("canvas")
+    .attr("id", "pdf-canvas");
 
-var canvas = svg.append('div')
-  .attr("id", "pdf-container")
-  .append("canvas")
-  .attr("id", "pdf-canvas");
+  }
+
+  var svg = d3.select("#viz")
+    .append("svg")
+    .attr("id", "viz-svg")
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .style("padding", "10px");
+
+//   #pdf-container {
+//     position: absolute;
+//     left: 0;
+//     top: 0;
+//     display: inline-block;
+//     z-index: 1;
+// }
   // .attr("width", FULL_PAGE_WIDTH)
   // .attr("height", FULL_PAGE_HEIGHT);
 
@@ -120,9 +135,9 @@ function setNpages(n)
 function getPageX(d,i)
 {
   x = parseInt(i / PAGES_PER_COL) * PAGE_SHIFT_X;
-  if(i+1 < currPage)
+  if(i < currPage)
     return x;
-  else if (i+1 == currPage)
+  else if (i == currPage)
     return x + 2 * PAGE_SHIFT_X;
   else
     return x + 3 * PAGE_SHIFT_X + FULL_PAGE_WIDTH;
@@ -130,7 +145,7 @@ function getPageX(d,i)
 
 function getPageY(d,i)
 {
-  if(i+1 == currPage)
+  if(i == currPage)
     return 0;
   else
     return parseInt(i % PAGES_PER_COL) * PAGE_SHIFT_Y;
@@ -138,7 +153,7 @@ function getPageY(d,i)
 
 function getPageW(d,i)
 {
-  if(i+1 == currPage)
+  if(i == currPage)
     return FULL_PAGE_WIDTH;
   else
     return PAGE_WIDTH;
@@ -146,7 +161,7 @@ function getPageW(d,i)
 
 function getPageH(d,i)
 {
-  if(i+1 == currPage)
+  if(i == currPage)
     return FULL_PAGE_HEIGHT;
   else
     return PAGE_HEIGHT;
@@ -182,22 +197,29 @@ function update() {
         // Fetch and render currPage
         pdf.getPage(p)
         .then(function (page) {
+          // Find scale to fill rect with page
+          var viewport = page.getViewport(1);
+          FULL_PAGE_WIDTH
+          sx = FULL_PAGE_WIDTH / viewport.x;
+          sy = FULL_PAGE_HEIGHT / viewport.y;
+
+          var scale = Math.min(sx, sy);
           var viewport = page.getViewport(1);
           var c = document.getElementById('pdf-canvas');
-          c.height = viewport.height;
+          c.height = viewport.height
           c.width = viewport.width;
           var context = c.getContext('2d');
           var pageTimestamp = new Date().getTime();
           var timestamp = pageTimestamp;
           var renderContext = {
             canvasContext: context,
-            viewport: viewport,
-            continueCallback: function(cont) {
-              if(timestamp != pageTimestamp) {
-                return;
-              }
-              cont();
-            }
+            viewport: viewport
+            // continueCallback: function(cont) {
+            //   if(timestamp != pageTimestamp) {
+            //     return;
+            //   }
+            //   cont();
+            // }
           };
           page.render(renderContext);
         })
@@ -207,11 +229,18 @@ function update() {
       });
 
     // Position pdf to match current page rect
+    s = $("#viz-svg").offset();
     p = selection.filter(function(d,i) {return i == currPage;});
+    console.log("p: " + p);
+    c = d3.select("#pdf-container");
 
-    // d3.select("#pdf-container")
-    //   .style('left', p.attr('x'))
-    //   .style('top', p.attr('y'));
+    console.log("moving pdf container to (" + (s.left + parseInt(p.attr('x')))
+                + ", " + (s.top + parseInt(p.attr('y'))) + ")");
+
+    c.style('left', (s.left + parseInt(p.attr('x'))) + "px")
+    c.style('top', (s.top + parseInt(p.attr('y'))) + "px");
+
+    console.log("pdf container now at (" + c.style("left") + ", " + c.style("top") + ")");
   }
 
   selection.exit().remove();
