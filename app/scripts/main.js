@@ -1,4 +1,4 @@
-var pdf;
+  var pdf;
 
 var drop = d3.select('#pdf-dropzone');
 drop.style('height', '100%');
@@ -50,7 +50,7 @@ var currPage = 0;
 
 // Global variables for page dimensions
 // I know this is probably not the JS way to do it, sue me
-var PAGE_WIDTH = 25;
+var PAGE_WIDTH = 29;
 var PAGE_HEIGHT = 37;
 var PAGE_SHIFT_X = 40;
 var PAGE_SHIFT_Y = 37;
@@ -58,16 +58,6 @@ var PAGES_PER_COL = 20;
 var FULL_PAGE_WIDTH = 820;
 var FULL_PAGE_HEIGHT = 1060;
 
-
-// Handle reading in dropped PDF
-function readPDF(data) {
-  PDFJS.getDocument(data).then( function (doc) {
-    console.log('Loaded pdf, number of pages: ' + doc.numPages);
-    pdf = doc;
-    setNpages(doc.numPages);
-    update();
-    currPage = 0;
-  })
 
   // Create PDF canvas for placement
   var canvas = d3.select("#viz")
@@ -82,14 +72,24 @@ function readPDF(data) {
     .attr("id", "pdf-canvas")
     .style("padding", "2px");
 
-  }
-
   var svg = d3.select("#viz")
     .append("svg")
     .attr("id", "viz-svg")
     .attr("width", "100%")
     .attr("height", FULL_PAGE_HEIGHT)
     .style("padding", "10px");
+
+// Handle reading in dropped PDF
+function readPDF(data) {
+  PDFJS.getDocument(data).then( function (doc) {
+    console.log('Loaded pdf, number of pages: ' + doc.numPages);
+    setNpages(doc.numPages);
+    pdf = doc;
+    generateThumbnails();
+    currPage = 0;
+    update();
+  })
+}
 
 //   #pdf-container {
 //     position: absolute;
@@ -101,6 +101,96 @@ function readPDF(data) {
   // .attr("width", FULL_PAGE_WIDTH)
   // .attr("height", FULL_PAGE_HEIGHT);
 
+// Scroll through all pages, render image, then save as thumbnail
+function generateThumbnails()
+{
+    // Get image and store minified version of it
+  console.log("Generating thumbnails...");
+  for(var i = 0; i < npages; i++)
+  {
+    // Create dummy canvas to render onto
+    var thumbCanvas = d3.select('#viz')
+      .append('canvas')
+      .attr('id', 'thumbnail-canvas-' + i)
+      .style('position', 'absolute')
+      .style('padding', "2px");
+
+    var c = document.getElementById('thumbnail-canvas-' + i);
+    console.log('canvas: ' + c);
+    pages[i].thumb = thumbCanvas;
+
+    renderPage(i, c, {width: PAGE_WIDTH, height: PAGE_HEIGHT}, function(i) {
+        pages[i].img = c.toDataURL();
+        // console.log("Img[" + i + "]: " + pages[i].img);
+      });
+  }
+  thumbCanvas.remove();
+}
+
+// Render page number p on a particular canvas with particular dimensions {width, height}
+function renderPage(p, canvas, dims, afterRendered)
+{
+  pdf.getPage(p+1) // Pages are one-indexed in PDFJS
+  .then(function (page) {
+
+    //Resize PDF viewport to fit canvas
+    //TODO: Make the border not a magic number
+    var viewport = page.getViewport(1);
+    sw = (dims.width - 4) / viewport.width;
+    sh = (dims.height - 4) / viewport.height;
+    viewport = page.getViewport(Math.min(sw,sh));
+
+    // TODO: Work with d3 selections instead of jquery, i.e. canvas.attr?
+    canvas.height = viewport.height
+    canvas.width = viewport.width;
+    var context = canvas.getContext('2d');
+    var pageTimestamp = new Date().getTime();
+    var timestamp = pageTimestamp;
+    var renderContext = {
+      canvasContext: context,
+      viewport: viewport
+      // continueCallback: function(cont) {
+      //   if(timestamp != pageTimestamp) {
+      //     return;
+      //   }
+      //   cont();
+      // }
+    };
+    var render = page.render(renderContext)
+
+    render.promise.then(function() {
+      if(afterRendered)
+      {
+        afterRendered(p);
+      }
+    })
+  })
+  .catch(function (reason) {
+    console.error('Page could not be rendered: ' + reason);
+  });
+}
+
+function canvasLeft(rect)
+{
+  // console.log('rect: ' + rect);
+  var s = $("#viz-svg");
+
+  var cleft =   (s.offset().left + (s.outerWidth(true) - s.width()) / 2
+    + parseInt(rect.attr('x'))) + "px";
+  // console.log("left: " + cleft);
+  return cleft;
+}
+
+function canvasTop(rect)
+{
+  var s = $("#viz-svg");
+
+  var ctop = (s.offset().top + (s.outerHeight(true) - s.height()) / 2
+    + parseInt(rect.attr('y'))) + "px";
+  return ctop;
+}
+
+
 function setNpages(n)
 {
   // Depending on new value of npages, push/pop new pages to end
@@ -109,7 +199,9 @@ function setNpages(n)
     for(var i = 0; i < (n-npages); i++)
     {
       pages.push({
-        index: i
+        index: i,
+        thumb: null,
+        img: null
       });
     }
   }
@@ -232,59 +324,28 @@ function update() {
     d3.select('#pdf-canvas')
       .datum(currPage)
       .each(function(d) {
-        var p = parseInt(d) + 1;
-        console.log("Getting page: " + p);
-
+        var p = parseInt(d);
+        console.log("Rendering page: " + p);
         // Fetch and render currPage
-        pdf.getPage(p)
-        .then(function (page) {
-
-          //Resize PDF viewport to fit canvas
-          //TODO: Make the border not a magic number
-          var viewport = page.getViewport(1);
-          sx = (FULL_PAGE_WIDTH - 4) / viewport.width;
-          sy = (FULL_PAGE_HEIGHT - 4) / viewport.height;
-          viewport = page.getViewport(Math.min(sx,sy))
-
-          var c = document.getElementById('pdf-canvas');
-          c.height = viewport.height
-          c.width = viewport.width;
-          var context = c.getContext('2d');
-          var pageTimestamp = new Date().getTime();
-          var timestamp = pageTimestamp;
-          var renderContext = {
-            canvasContext: context,
-            viewport: viewport
-            // continueCallback: function(cont) {
-            //   if(timestamp != pageTimestamp) {
-            //     return;
-            //   }
-            //   cont();
-            // }
-          };
-          page.render(renderContext);
-        })
-        .catch(function (reason) {
-          console.error('Page could not be rendered: ' + reason);
-        });
+        var canvas = document.getElementById('pdf-canvas');
+        renderPage(p, canvas, {width: FULL_PAGE_WIDTH, height: FULL_PAGE_HEIGHT});
       });
 
-    // Position pdf to match current page rect
-    s = $("#viz-svg");
-    p = selection.filter(function(d,i) {return i == currPage;});
-    console.log("p: " + p);
-    c = d3.select("#pdf-container");
+    // Reposition main pdf canvas
+    var currRect = d3.selectAll('rect').filter(function(d,i) {return i == currPage;});
 
-    cleft = (s.offset().left + (s.outerWidth(true) - s.width()) / 2
-      + parseInt(p.attr('x'))) + "px";
-    ctop = (s.offset().top + (s.outerHeight(true) - s.height()) / 2
-      + parseInt(p.attr('y'))) + "px";
+    console.log("rect pre: " + currRect);
+    d3.select('#pdf-container')
+      .style('left', canvasLeft(currRect))
+      .style('top', canvasTop(currRect));
 
-    console.log("moving pdf container to (" + cleft + ", " + ctop + ")");
-
-    c.style('left', cleft);
-    c.style('top', ctop);
-
-    console.log("pdf container now at (" + c.style("left") + ", " + c.style("top") + ")");
+    // Reposition all thumbnails
+    d3.selectAll('rect')
+      .each(function (d,i){
+        p = d3.select(this);
+        d.thumb.style('left', canvasLeft(p))
+        d.thumb.style('top', canvasTop(p));
+      });
   }
+
 }
