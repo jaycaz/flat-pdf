@@ -5,6 +5,7 @@ drop.style('height', '100%');
 
 Dropzone.options.pdfDropzone = {
   paramName: "file", // The name that will be used to transfer the file
+  clickable: false,
   maxFilesize: 100, // MB
   dictDefaultMessage: "Upload any PDF to make it into a scroll",
   previewTemplate: '<div></div>',
@@ -107,7 +108,9 @@ function setNpages(n)
   {
     for(var i = 0; i < (n-npages); i++)
     {
-      pages.push({});
+      pages.push({
+        index: i
+      });
     }
   }
   else if(n < npages)
@@ -185,7 +188,31 @@ function update() {
     .data(pages);
 
   selection.enter()
-    .append('rect');
+    .append('rect')
+    .on('mouseover', function(d, i) {
+      d3.select(this)
+        .style('fill', '#008ae6');
+      svg.append('text')
+        .attr('id', 'hover-num')
+        .attr('x', getPageX(d,i) + getPageW(d,i) / 2)
+        .attr('y', getPageY(d,i) + getPageH(d,i) / 2)
+        .style('font-size', 12)
+        .style('cursor', 'default')
+        .attr('text-anchor', 'middle')
+        .style('fill', '#e2e3e3')
+        .text(i+1);
+      console.log('mouseover: ' + d3.select(this).select('text'));
+    })
+    .on('mouseout', function(d, i) {
+      d3.select(this)
+        .style('fill', '#e2e3e3');
+
+      svg.select('#hover-num').remove();
+    })
+    .on('click', function(d,i) {
+      currPage = i;
+      update();
+    });
 
   selection
     .attr('x', getPageX)
@@ -196,6 +223,8 @@ function update() {
     .attr('ry', 1)
     .style('stroke', '#000')
     .style('fill', '#e2e3e3');
+
+  selection.exit().remove();
 
   // Update PDF canvas with new page
   if(pdf)
@@ -258,6 +287,4 @@ function update() {
 
     console.log("pdf container now at (" + c.style("left") + ", " + c.style("top") + ")");
   }
-
-  selection.exit().remove();
 }
