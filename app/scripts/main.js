@@ -1,10 +1,18 @@
 var pdf;
 
+var drop = d3.select('#pdf-dropzone');
+drop.style('height', '100%');
+
 Dropzone.options.pdfDropzone = {
   paramName: "file", // The name that will be used to transfer the file
   maxFilesize: 100, // MB
   dictDefaultMessage: "Upload any PDF to make it into a scroll",
   previewTemplate: '<div></div>',
+  init: function() {
+    this.on("dragenter", function(e) {drop.select('div').style('color', '#008ae6')});
+    this.on("dragleave", function(e) {drop.select('div').style('color', null)});
+    this.on("addedfile", function(e) {drop.select('div').style('color', null)});
+  },
   accept: function(file, done) {
     var reader = new FileReader();
     reader.onloadstart = function(event) {
@@ -23,6 +31,7 @@ Dropzone.options.pdfDropzone = {
       // }
 
       readPDF(new Uint8Array(contents));
+      drop.style('height', 'auto');
     }
     reader.readAsArrayBuffer(file);
   }
