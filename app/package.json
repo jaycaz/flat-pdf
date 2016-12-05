@@ -1,0 +1,26 @@
+{
+  "name": "scroll.me",
+  "version": "0.0.1",
+  "description": "PDF Reader & Visualizer in one",
+  "main": "scripts/main.js",
+  "dependencies": {
+    "d3": "^4.4.0",
+    "dropzone": "^4.3.0",
+    "jquery": "^3.1.1",
+    "pdfjs-dist": "^1.6.361"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "beefy scripts/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/jaycaz/scroll.me.git"
+  },
+  "author": "Jordan Cazamias",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jaycaz/scroll.me/issues"
+  },
+  "homepage": "https://github.com/jaycaz/scroll.me#readme"
+}
