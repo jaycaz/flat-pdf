@@ -59,25 +59,25 @@ var FULL_PAGE_WIDTH = 820;
 var FULL_PAGE_HEIGHT = 1060;
 
 
-  // Create PDF canvas for placement
-  var canvas = d3.select("#viz")
-    .append('div')
-    .attr("id", "pdf-container")
-    .style("position", "absolute")
-    .style("left", "0")
-    .style("top", "0")
-    .style("display", "inline-block")
-    .style("z-index", "1")
-    .append("canvas")
-    .attr("id", "pdf-canvas")
-    .style("padding", "2px");
+// Create PDF canvas for placement
+var canvas = d3.select("#viz")
+  .append('div')
+  .attr("id", "pdf-container")
+  .style("position", "absolute")
+  .style("left", "0")
+  .style("top", "0")
+  .style("display", "inline-block")
+  .style("z-index", "1")
+  .append("canvas")
+  .attr("id", "pdf-canvas")
+  .style("padding", "2px");
 
-  var svg = d3.select("#viz")
-    .append("svg")
-    .attr("id", "viz-svg")
-    .attr("width", "100%")
-    .attr("height", FULL_PAGE_HEIGHT)
-    .style("padding", "10px");
+var svg = d3.select("#viz")
+  .append("svg")
+  .attr("id", "viz-svg")
+  .attr("width", "100%")
+  .attr("height", FULL_PAGE_HEIGHT)
+  .style("padding", "10px");
 
 // Handle reading in dropped PDF
 function readPDF(data) {
@@ -113,7 +113,8 @@ function generateThumbnails()
       .append('canvas')
       .attr('id', 'thumbnail-canvas-' + i)
       .style('position', 'absolute')
-      .style('padding', "2px");
+      .style('padding', "2px")
+      .style('pointer-events', 'none');
 
     var c = document.getElementById('thumbnail-canvas-' + i);
     console.log('canvas: ' + c);
@@ -284,6 +285,8 @@ function update() {
     .on('mouseover', function(d, i) {
       d3.select(this)
         .style('fill', '#008ae6');
+      pages[i].thumb
+        .style('visibility', 'hidden');
       svg.append('text')
         .attr('id', 'hover-num')
         .attr('x', getPageX(d,i) + getPageW(d,i) / 2)
@@ -292,12 +295,14 @@ function update() {
         .style('cursor', 'default')
         .attr('text-anchor', 'middle')
         .style('fill', '#e2e3e3')
+        .style('pointer-events', 'none')
         .text(i+1);
-      console.log('mouseover: ' + d3.select(this).select('text'));
     })
     .on('mouseout', function(d, i) {
       d3.select(this)
         .style('fill', '#e2e3e3');
+      pages[i].thumb
+        .style('visibility', 'visible');
 
       svg.select('#hover-num').remove();
     })
@@ -314,6 +319,7 @@ function update() {
     .attr('rx', 1)
     .attr('ry', 1)
     .style('stroke', '#000')
+    .style('stroke-width', 0)
     .style('fill', '#e2e3e3');
 
   selection.exit().remove();
