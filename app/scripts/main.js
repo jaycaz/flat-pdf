@@ -44,10 +44,15 @@ Dropzone.options.pdfDropzone = {
 // })
 
 
+// Data
 var pages = [];
 var npages = 0;
 var currPage = 0;
+var previewPage = null;
 var scrollY = 0;
+
+// Cached values for convenience
+var currRect;
 
 // Global variables for page dimensions
 // I know this is probably not the JS way to do it, sue me
@@ -145,7 +150,7 @@ function generateThumbnails()
     console.log('canvas: ' + c);
     pages[i].thumb = thumbCanvas;
 
-    renderPage(i, c, {width: PAGE_WIDTH, height: PAGE_HEIGHT}, function(i) {
+    renderPage(i, c, {width: PAGE_WIDTH, height: PAGE_HEIGHT, scrollY:0}, function(i) {
         pages[i].img = c.toDataURL();
         // console.log("Img[" + i + "]: " + pages[i].img);
 
@@ -154,7 +159,7 @@ function generateThumbnails()
           this.exposure(50);
           this.saturation(75);
           this.render();
-        })
+        });
       });
   }
 }
@@ -176,8 +181,9 @@ function renderPage(p, canvas, dims, afterRendered)
     canvas.height = viewport.height
     canvas.width = viewport.width;
     var context = canvas.getContext('2d');
+    // context.clearRect(0, 0, canvas.width, canvas.height);
     context. setTransform(1, 0, 0, 1, 0, 0);
-    context.translate(0, scrollY);
+    context.translate(0, dims.scrollY);
     var pageTimestamp = new Date().getTime();
     var timestamp = pageTimestamp;
     var renderContext = {
@@ -313,6 +319,7 @@ function update() {
 
   selection.enter()
     .append('rect')
+    .style('fill', '#e2e3e3')
     .on('mouseover', function(d, i) {
       d3.select(this)
         .style('fill', '#008ae6');
@@ -328,14 +335,19 @@ function update() {
         .style('fill', '#e2e3e3')
         .style('pointer-events', 'none')
         .text(i+1);
+      currRect.style('fill', '#008ae6')
+      previewPage = i;
+      update();
     })
     .on('mouseout', function(d, i) {
       d3.select(this)
         .style('fill', '#e2e3e3');
       pages[i].thumb
         .style('visibility', 'visible');
-
       svg.select('#hover-num').remove();
+      currRect.style('fill', '#e2e3e3')
+      previewPage = null;
+      update();
     })
     .on('click', function(d,i) {
       currPage = i;
@@ -351,8 +363,7 @@ function update() {
     .attr('rx', 1)
     .attr('ry', 1)
     .style('stroke', '#000')
-    .style('stroke-width', 0)
-    .style('fill', '#e2e3e3');
+    .style('stroke-width', 0);
 
   selection.exit().remove();
 
@@ -366,14 +377,23 @@ function update() {
         console.log("Rendering page: " + p);
         // Fetch and render currPage
         var canvas = document.getElementById('pdf-canvas');
-        renderPage(p, canvas, {width: FULL_PAGE_WIDTH, height: FULL_PAGE_HEIGHT});
 
-        // Cache current page image for scrolling
-        // currPageImg = canvas.toBlob();
+        // If preview page exists, render that instead
+        if(previewPage)
+        {
+          renderPage(previewPage, canvas,
+            {width: FULL_PAGE_WIDTH, height: FULL_PAGE_HEIGHT, scrollY:0});
+        }
+        else
+        {
+          renderPage(p, canvas, {width: FULL_PAGE_WIDTH, 
+                                 height: FULL_PAGE_HEIGHT, 
+                                 scrollY: scrollY});
+        }
       });
 
     // Reposition main pdf canvas
-    var currRect = d3.selectAll('rect').filter(function(d,i) {return i == currPage;});
+    currRect = d3.selectAll('rect').filter(function(d,i) {return i == currPage;});
 
     console.log("rect pre: " + currRect);
     d3.select('#pdf-container')
