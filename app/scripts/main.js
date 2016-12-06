@@ -47,6 +47,7 @@ Dropzone.options.pdfDropzone = {
 var pages = [];
 var npages = 0;
 var currPage = 0;
+var scrollY = 0;
 
 // Global variables for page dimensions
 // I know this is probably not the JS way to do it, sue me
@@ -58,6 +59,7 @@ var PAGES_PER_COL = 20;
 var FULL_PAGE_WIDTH = 820;
 var FULL_PAGE_HEIGHT = 1060;
 
+var SCROLL_SENSITIVITY = 2.0;
 
 // Create PDF canvas for placement
 var canvas = d3.select("#viz")
@@ -75,9 +77,32 @@ var canvas = d3.select("#viz")
 var svg = d3.select("#viz")
   .append("svg")
   .attr("id", "viz-svg")
-  .attr("width", "100%")
+  .attr("width", "200%")
   .attr("height", FULL_PAGE_HEIGHT)
-  .style("padding", "10px");
+  .style("padding", "10px")
+
+// Mouse wheel will scroll current page, and eventually trigger a new page
+d3.select('body')
+  .on("wheel.zoom", function() {
+    if(!pdf)
+    {
+      return;
+    }
+    dy = d3.event.wheelDeltaY * SCROLL_SENSITIVITY;
+    scrollY += dy;
+    if(scrollY < -FULL_PAGE_HEIGHT && currPage < npages-1)
+    {
+      scrollY = 0;
+      currPage++;
+    }
+    if(scrollY > FULL_PAGE_HEIGHT && currPage > 0)
+    {
+      scrollY = 0;
+      currPage--;
+    }
+    console.log('scrollY: ' + scrollY);
+    update();
+  });
 
 // Handle reading in dropped PDF
 function readPDF(data) {
@@ -126,7 +151,7 @@ function generateThumbnails()
 
         // Adjust image for better clarity at small scales
         Caman('#thumbnail-canvas-'+i, function() {
-          this.exposure(75);
+          this.exposure(50);
           this.saturation(75);
           this.render();
         })
@@ -151,6 +176,8 @@ function renderPage(p, canvas, dims, afterRendered)
     canvas.height = viewport.height
     canvas.width = viewport.width;
     var context = canvas.getContext('2d');
+    context. setTransform(1, 0, 0, 1, 0, 0);
+    context.translate(0, scrollY);
     var pageTimestamp = new Date().getTime();
     var timestamp = pageTimestamp;
     var renderContext = {
@@ -197,7 +224,6 @@ function canvasTop(rect)
   return ctop;
 }
 
-
 function setNpages(n)
 {
   // Depending on new value of npages, push/pop new pages to end
@@ -241,7 +267,6 @@ function setNpages(n)
       }
     });
   });
-
 }
 
 // Get position and dimensions of pages.
@@ -314,6 +339,7 @@ function update() {
     })
     .on('click', function(d,i) {
       currPage = i;
+      scrollY = 0;
       update();
     });
 
@@ -341,6 +367,9 @@ function update() {
         // Fetch and render currPage
         var canvas = document.getElementById('pdf-canvas');
         renderPage(p, canvas, {width: FULL_PAGE_WIDTH, height: FULL_PAGE_HEIGHT});
+
+        // Cache current page image for scrolling
+        // currPageImg = canvas.toBlob();
       });
 
     // Reposition main pdf canvas
@@ -358,6 +387,7 @@ function update() {
         d.thumb.style('left', canvasLeft(p))
         d.thumb.style('top', canvasTop(p));
       });
+
   }
 
 }
