@@ -53,7 +53,7 @@ var currPage = 0;
 var PAGE_WIDTH = 29;
 var PAGE_HEIGHT = 37;
 var PAGE_SHIFT_X = 40;
-var PAGE_SHIFT_Y = 37;
+var PAGE_SHIFT_Y = 35;
 var PAGES_PER_COL = 20;
 var FULL_PAGE_WIDTH = 820;
 var FULL_PAGE_HEIGHT = 1060;
@@ -113,7 +113,7 @@ function generateThumbnails()
       .append('canvas')
       .attr('id', 'thumbnail-canvas-' + i)
       .style('position', 'absolute')
-      .style('padding', "2px")
+      .style('padding-left', "2px")
       .style('pointer-events', 'none');
 
     var c = document.getElementById('thumbnail-canvas-' + i);
@@ -123,9 +123,15 @@ function generateThumbnails()
     renderPage(i, c, {width: PAGE_WIDTH, height: PAGE_HEIGHT}, function(i) {
         pages[i].img = c.toDataURL();
         // console.log("Img[" + i + "]: " + pages[i].img);
+
+        // Adjust image for better clarity at small scales
+        Caman('#thumbnail-canvas-'+i, function() {
+          this.exposure(75);
+          this.saturation(75);
+          this.render();
+        })
       });
   }
-  thumbCanvas.remove();
 }
 
 // Render page number p on a particular canvas with particular dimensions {width, height}
