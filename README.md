@@ -1,2 +1,2 @@
 # flat-pdf
-An alternative PDF visualizer and reader all in one
+An flat layout PDF visualizer and reader all in one
