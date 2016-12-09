@@ -98,6 +98,10 @@ var svg = d3.select("#viz")
   .attr("height", FULL_PAGE_HEIGHT)
   .style("padding", "10px")
 
+var thumbnails = d3.select("#viz")
+  .append("div")
+  .attr("id", "thumbnails");
+
 // Mouse wheel will scroll current page, and eventually trigger a new page
 d3.select('body')
   .on("wheel.zoom", function() {
@@ -184,7 +188,7 @@ function generateThumbnails()
   for(var i = 0; i < npages; i++)
   {
     // Create dummy canvas to render onto
-    var thumbCanvas = d3.select('#viz')
+    var thumbCanvas = thumbnails
       .append('canvas')
       .attr('id', 'thumbnail-canvas-' + i)
       .style('position', 'absolute')
@@ -295,7 +299,7 @@ function extractText()
 // Add a copy of the word's index for each occurrence
 function queryWords(queries) {
 
-  result = {}
+  matches = [];
   for(var i = 0; i < queries.length; i++)
   {
     w = queries[i]
@@ -305,24 +309,17 @@ function queryWords(queries) {
     }
 
     words[w].forEach(function(appearance) {
-      if(!result[appearance.page])
-      {
-        result[appearance.page] = new Array(QUERY_REGIONS_PER_PAGE);
-        // result[appearance.page].fill(Arrays.copyOf([],0));
-      }
-
       var region = parseInt(appearance.y * QUERY_REGIONS_PER_PAGE);
 
-      if(!result[appearance.page][region])
-      {
-        result[appearance.page][region] = new Array();
-      }
-
-      result[appearance.page][region].push(i);
+      matches.push({
+        page: appearance.page,
+        region: region,
+        word: i
+      });
     });
   }
 
-  return result;
+  return matches;
 }
 
 function getPDFViewport(page, dims)
@@ -594,8 +591,25 @@ function update() {
 
     // Add query highlights for each thumbnail
     matches = queryWords(queries);
-    console.dir(matches);
+    // console.dir(matches);
 
+    // svg.selectAll('.highlight').remove();
+    svg.selectAll('.highlight')
+      .data(matches)
+      .enter()
+      .append('rect')
+      .attr('id', (d,i) => 'match-' + i)
+      .attr('class', 'highlight')
+      .attr('x', d => getPageX(d,d.page))
+      .attr('y', d => getPageY(d,d.page) + (d.region / QUERY_REGIONS_PER_PAGE) * getPageH(d,d.page))
+      .attr('width', d => getPageW(d,d.page))
+      .attr('height', d => 5)
+      .style('z-index', 2)
+      .style('pointer-events', 'none');
   }
 
 }
+
+var colors = [
+
+]
