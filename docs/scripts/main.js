@@ -38,13 +38,9 @@ Dropzone.options.pdfDropzone = {
       // Add instructional text for searching
       d3.select('body')
         .insert('p', ':first-child')
-        .attr('id', 'queries')
+        .attr('id', 'extracting')
         .style('height', '20px')
-        .text(' ');
-      d3.select('body')
-        .insert('p', ':first-child')
-        .html("Start typing to search for text. ESC to clear.</br> \
-         Slide the slider to go back to previously visited pages.")
+        .text('Extracting text, one moment...');
     }
     reader.readAsArrayBuffer(file);
   }
@@ -64,6 +60,8 @@ var currPage = 0;
 var scrollY = 0;
 var words = {};
 var queries = [''];
+var visitedPages = [currPage];
+var visitedPtr = 0;
 
 // Cached values for convenience
 var currRect;
@@ -133,11 +131,13 @@ d3.select('body')
     {
       scrollY = 0;
       currPage++;
+      visitedPages[visitedPtr]++;
     }
     if(scrollY > FULL_PAGE_HEIGHT && currPage > 0)
     {
       scrollY = 0;
       currPage--;
+      visitedPages[visitedPtr]--;
     }
     console.log('scrollY: ' + scrollY);
     update();
@@ -168,6 +168,20 @@ d3.select('body')
     if(d3.event.keyCode === 27)
     {
       queries = [''];
+    }
+
+    // Arrow keys go back and forth in the visited pages stack
+    if(d3.event.keyCode === 37 && visitedPtr > 0)
+    {
+      visitedPtr--;
+      currPage = visitedPages[visitedPtr];
+      updatePages();
+    }
+    if(d3.event.keyCode === 39 && visitedPtr < visitedPages.length-1)
+    {
+      visitedPtr++;
+      currPage = visitedPages[visitedPtr];
+      updatePages();
     }
 
     // Spacebar will finish current query word and break off to a new one
@@ -256,6 +270,7 @@ function cleanWord(w)
 function extractText()
 {
   console.log("Extracting text...");
+  var completedPages = 0;
   for(var i = 0; i < npages; i++)
   {
     pdf.getPage(i+1).then(function(page) {
@@ -311,7 +326,36 @@ function extractText()
             }
 
             words[w].push(appearance);
+
           })
+
+          // Update text on progress
+          completedPages++;
+          d3.select('#extracting')
+            .text('Extracting: ' + completedPages + ' of ' + npages);
+
+          // Only show prompt to search once all pages are done
+          if(completedPages == npages)
+          {
+            d3.select('#extracting').remove();
+
+            d3.select('body')
+              .insert('p', ':first-child')
+              .attr('id', 'visited-pages')
+              .style('height', '20px')
+              .text(' ');
+            d3.select('body')
+              .insert('p', ':first-child')
+              .attr('id', 'queries')
+              .style('height', '20px')
+              .text(' ');
+            d3.select('body')
+              .insert('p', ':first-child')
+              .html("Start typing to search for text. ESC to clear.</br> \
+               Use the L/R arrow keys to go back to previously visited pages.")
+
+            update();
+          }
         }
 
         pages[page.pageIndex].rawText = rawText;
@@ -484,24 +528,24 @@ function setNpages(n)
   // $('#currpage-handle').slider( "option", "max", n);
   npages = n;
 
-  // Initalize current page slider
-  $(function() {
-    var handle = $("#currpage-handle");
-    $("#currpage-slider").slider({
-      min: 1,
-      max: n,
-      create: function() {
-        handle.text($(this).slider("value"));
-        currPage = $(this).slider("value")-1;
-        update();
-      },
-      slide: function(event, ui) {
-        handle.text(ui.value);
-        currPage = ui.value-1;
-        update();
-      }
-    });
-  });
+  // // Initalize current page slider
+  // $(function() {
+  //   var handle = $("#currpage-handle");
+  //   $("#currpage-slider").slider({
+  //     min: 1,
+  //     max: n,
+  //     create: function() {
+  //       handle.text($(this).slider("value"));
+  //       currPage = $(this).slider("value")-1;
+  //       update();
+  //     },
+  //     slide: function(event, ui) {
+  //       handle.text(ui.value);
+  //       currPage = ui.value-1;
+  //       update();
+  //     }
+  //   });
+  // });
 }
 
 // Get position and dimensions of pages.
@@ -550,9 +594,6 @@ function updatePages() {
     .append('rect')
     .style('fill', '#e2e3e3')
     .on('mouseover', function(d, i) {
-      d3.select('.mouse')
-        .style('fill', '#e2e3e3')
-        .classed('mouse', false);
       d3.select(this)
         .style('fill', '#008ae6')
         .classed('mouse', true);
@@ -577,8 +618,8 @@ function updatePages() {
     })
     .on('mouseout', function(d, i) {
       d3.select('.mouse')
-        .classed('mouse', false)
-        .style('fill', '#e2e3e3');
+        .style('fill', '#e2e3e3')
+        .classed('mouse', false);
       pages[i].thumb
         .style('visibility', 'visible');
       svg.selectAll('highlight')
@@ -590,6 +631,13 @@ function updatePages() {
       // update();
     })
     .on('click', function(d,i) {
+
+      if(visitedPtr)
+      {
+        visitedPages = visitedPages.slice(0,visitedPtr+1);
+      }
+      visitedPages.push(i);
+      visitedPtr = visitedPages.length-1;
       currPage = i;
       scrollY = 0;
       update();
@@ -697,6 +745,24 @@ function updateMarks() {
       .datum(queries)
       .text(d => " " + d.join(" "));
     }
+
+    d3.select('#visited-pages')
+      .datum(visitedPages)
+      .text(function(d) {
+        str = "";
+        for(var i = 0; i < d.length; i++)
+        {
+          if(i == visitedPtr)
+          {
+            str += "(" + (parseInt(visitedPages[i])+1) + ") ";
+          }
+          else
+          {
+            str += (parseInt(visitedPages[i])+1) + " ";
+          }
+        }
+        return str;
+      })
 }
 
 function update() {
