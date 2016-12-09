@@ -50,6 +50,7 @@ var npages = 0;
 var currPage = 0;
 // var previewPage = null;
 var scrollY = 0;
+var words = {};
 
 // Cached values for convenience
 var currRect;
@@ -173,6 +174,20 @@ function generateThumbnails()
   }
 }
 
+function cleanWord(w)
+{
+  if (!w)
+  {
+    return null;
+  }
+
+  cw = w.toLowerCase();
+  cw = cw.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+  // cw = cw.replace(/\s{2,}/g," ");
+
+  return cw;
+}
+
 function extractText()
 {
   console.log("Extracting text...");
@@ -185,9 +200,50 @@ function extractText()
 
         // Extract raw text from all of the objects so it's easier to work with
         var lines = []
-        textContent.items.forEach(function(t) { lines.push(t.str); });
-        var rawText = lines.join("");
-        console.log(page.pageIndex + ": " + rawText);
+        var currLine = "";
+        for(var j = 0; j < textContent.items.length; j++)
+        {
+          item = textContent.items[j];
+          // Join 'lines' that are on the same y, they're supposed to be together
+          if(j > 0 && textContent.items[j-1].transform[5] === item.transform[5])
+          {
+            currLine += item.str;
+          }
+          else
+          {
+            lines.push(currLine);
+            currLine = item.str;
+          }
+
+          if(j == textContent.items.length - 1)
+          {
+            lines.push(currLine);
+          }
+        }
+
+        var rawText = lines.join("\n");
+        // console.log(page.pageIndex + ": " + rawText);
+
+        // For each word, document which pages it appears in and where on the page
+        for(var j = 0; j < lines.length; j++)
+        {
+          lines[j].split(" ").forEach(function(raw_word) {
+            if(!raw_word) return;
+            w = cleanWord(raw_word);
+            console.log(w);
+
+            if(!words[w]) {
+              words[w] = []
+            }
+
+            appearance = {
+              page: page.pageIndex,
+              transform: textContent.items[j].transform
+            }
+
+            words[w].push(appearance);
+          })
+        }
 
         pages[page.pageIndex].rawText = rawText;
       })
