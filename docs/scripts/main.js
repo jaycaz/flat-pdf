@@ -33,6 +33,18 @@ Dropzone.options.pdfDropzone = {
 
       readPDF(new Uint8Array(contents));
       drop.style('height', 'auto');
+      drop.remove();
+
+      // Add instructional text for searching
+      d3.select('body')
+        .insert('p', ':first-child')
+        .attr('id', 'queries')
+        .style('height', '20px')
+        .text(' ');
+      d3.select('body')
+        .insert('p', ':first-child')
+        .html("Start typing to search for text. ESC to clear.</br> \
+         Slide the slider to go back to previously visited pages.")
     }
     reader.readAsArrayBuffer(file);
   }
@@ -149,17 +161,22 @@ d3.select('body')
       else if(queries.length > 1)
       {
         queries = queries.slice(0,-1);
-        update();
       }
+    }
+
+    // Escape will clear the selection
+    if(d3.event.keyCode === 27)
+    {
+      queries = [''];
     }
 
     // Spacebar will finish current query word and break off to a new one
     if(d3.event.keyCode === ' '.charCodeAt(0))
     {
       queries.push('');
-      update();
     }
     console.log(queries);
+    updateMarks();
   });
 
 // Handle reading in dropped PDF
@@ -524,7 +541,8 @@ function getPageH(d,i)
     return PAGE_HEIGHT;
 }
 
-function update() {
+function updatePages() {
+
   var selection = svg.selectAll('rect')
     .data(pages);
 
@@ -532,8 +550,12 @@ function update() {
     .append('rect')
     .style('fill', '#e2e3e3')
     .on('mouseover', function(d, i) {
+      d3.select('.mouse')
+        .style('fill', '#e2e3e3')
+        .classed('mouse', false);
       d3.select(this)
-        .style('fill', '#008ae6');
+        .style('fill', '#008ae6')
+        .classed('mouse', true);
       pages[i].thumb
         .style('visibility', 'hidden');
       svg.selectAll('highlight')
@@ -549,12 +571,13 @@ function update() {
         .style('fill', '#e2e3e3')
         .style('pointer-events', 'none')
         .text(i+1);
-      currRect.style('fill', '#008ae6')
+      currRect.style('fill', '#008ae6');
       // previewPage = i;
       // update();
     })
     .on('mouseout', function(d, i) {
-      d3.select(this)
+      d3.select('.mouse')
+        .classed('mouse', false)
         .style('fill', '#e2e3e3');
       pages[i].thumb
         .style('visibility', 'visible');
@@ -562,7 +585,7 @@ function update() {
         .filter('.page-' + i)
         .style('visibility', 'visible');
       svg.select('#hover-num').remove();
-      currRect.style('fill', '#e2e3e3')
+      currRect.style('fill', '#e2e3e3');
       // previewPage = null;
       // update();
     })
@@ -638,14 +661,19 @@ function update() {
         d.thumb.style('left', canvasLeft(p))
         d.thumb.style('top', canvasTop(p));
       });
+  }
+}
 
+function updateMarks() {
+
+  if(pdf) {
     // Add query highlights for each thumbnail
     // matches = queryWords(queries);
     scores = scorePages(queries);
     console.dir(scores);
-    // console.dir(matches);
 
-    // svg.selectAll('.highlight').remove();
+    // console.dir(matches);
+    svg.selectAll('.highlight').remove();
     svg.selectAll('.highlight')
       // .data(matches)
       .data(scores)
@@ -664,7 +692,16 @@ function update() {
       .style('fill', (d,i) => colors[Math.min(d.score, queries.length)])
       .style('opacity', (d,i) => d.score == 0 ? 0.0 : 1.0)
       .style('pointer-events', 'none');
+
+    d3.select('#queries')
+      .datum(queries)
+      .text(d => " " + d.join(" "));
     }
+}
+
+function update() {
+  updatePages();
+  updateMarks();
 }
 
 var colors = ["#ffffcc","#fed976","#feb24c","#fd8d3c","#fc4e2a","#e31a1c","#bd0026","#800026"]
