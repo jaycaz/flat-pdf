@@ -48,7 +48,7 @@ Dropzone.options.pdfDropzone = {
 var pages = [];
 var npages = 0;
 var currPage = 0;
-var previewPage = null;
+// var previewPage = null;
 var scrollY = 0;
 
 // Cached values for convenience
@@ -336,7 +336,7 @@ function update() {
         .style('pointer-events', 'none')
         .text(i+1);
       currRect.style('fill', '#008ae6')
-      previewPage = i;
+      // previewPage = i;
       update();
     })
     .on('mouseout', function(d, i) {
@@ -346,7 +346,7 @@ function update() {
         .style('visibility', 'visible');
       svg.select('#hover-num').remove();
       currRect.style('fill', '#e2e3e3')
-      previewPage = null;
+      // previewPage = null;
       update();
     })
     .on('click', function(d,i) {
@@ -378,18 +378,18 @@ function update() {
         // Fetch and render currPage
         var canvas = document.getElementById('pdf-canvas');
 
-        // If preview page exists, render that instead
-        if(previewPage)
-        {
-          renderPage(previewPage, canvas,
-            {width: FULL_PAGE_WIDTH, height: FULL_PAGE_HEIGHT, scrollY:0});
-        }
-        else
-        {
+        // // If preview page exists, render that instead
+        // if(previewPage)
+        // {
+        //   renderPage(previewPage, canvas,
+        //     {width: FULL_PAGE_WIDTH, height: FULL_PAGE_HEIGHT, scrollY:0});
+        // }
+        // else
+        // {
           renderPage(p, canvas, {width: FULL_PAGE_WIDTH, 
                                  height: FULL_PAGE_HEIGHT, 
                                  scrollY: scrollY});
-        }
+        // }
       });
 
     // Reposition main pdf canvas
