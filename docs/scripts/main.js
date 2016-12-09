@@ -51,6 +51,7 @@ var currPage = 0;
 // var previewPage = null;
 var scrollY = 0;
 var words = {};
+var queries = [''];
 
 // Cached values for convenience
 var currRect;
@@ -64,6 +65,9 @@ var PAGE_SHIFT_Y = 35;
 var PAGES_PER_COL = 20;
 var FULL_PAGE_WIDTH = 820;
 var FULL_PAGE_HEIGHT = 1060;
+
+// How many "regions" page should be broken into when drawing search lines
+var QUERY_REGIONS_PER_PAGE = 8;
 
 var SCROLL_SENSITIVITY = 2.0;
 
@@ -97,6 +101,7 @@ var svg = d3.select("#viz")
 // Mouse wheel will scroll current page, and eventually trigger a new page
 d3.select('body')
   .on("wheel.zoom", function() {
+    // Mouse wheel scrolls a page
     if(!pdf)
     {
       return;
@@ -115,6 +120,37 @@ d3.select('body')
     }
     console.log('scrollY: ' + scrollY);
     update();
+  })
+  .on("keydown", function() {
+    // Keypress will add on to the last query word
+    var c = String.fromCharCode(d3.event.keyCode).toLowerCase();
+    if((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z'))
+    {
+      queries[queries.length-1] += c;
+    }
+
+    // Backspace will delete characters from the last entry, and subsequent
+    // entries if user keeps pressing it
+    if(d3.event.keyCode === 8)
+    {
+      if(queries[queries.length-1] !== '')
+      {
+        queries[queries.length-1] = queries[queries.length-1].slice(0,-1);
+      }
+      else if(queries.length > 1)
+      {
+        queries = queries.slice(0,-1);
+        update();
+      }
+    }
+
+    // Spacebar will finish current query word and break off to a new one
+    if(d3.event.keyCode === ' '.charCodeAt(0))
+    {
+      queries.push('');
+      update();
+    }
+    console.log(queries);
   });
 
 // Handle reading in dropped PDF
@@ -230,15 +266,19 @@ function extractText()
           lines[j].split(" ").forEach(function(raw_word) {
             if(!raw_word) return;
             w = cleanWord(raw_word);
+            if(w === "") return;
             console.log(w);
 
             if(!words[w]) {
               words[w] = []
             }
 
+            pageHeight = page.view[3];
+
             appearance = {
               page: page.pageIndex,
-              transform: textContent.items[j].transform
+              // normalized y coord
+              y: textContent.items[j].transform[5] / pageHeight
             }
 
             words[w].push(appearance);
@@ -249,6 +289,40 @@ function extractText()
       })
     })
   }
+}
+
+// Perform a query on the doc using the given word
+// Add a copy of the word's index for each occurrence
+function queryWords(queries) {
+
+  result = {}
+  for(var i = 0; i < queries.length; i++)
+  {
+    w = queries[i]
+    if(!words[w])
+    {
+      continue;
+    }
+
+    words[w].forEach(function(appearance) {
+      if(!result[appearance.page])
+      {
+        result[appearance.page] = new Array(QUERY_REGIONS_PER_PAGE);
+        // result[appearance.page].fill(Arrays.copyOf([],0));
+      }
+
+      var region = parseInt(appearance.y * QUERY_REGIONS_PER_PAGE);
+
+      if(!result[appearance.page][region])
+      {
+        result[appearance.page][region] = new Array();
+      }
+
+      result[appearance.page][region].push(i);
+    });
+  }
+
+  return result;
 }
 
 function getPDFViewport(page, dims)
@@ -470,7 +544,7 @@ function update() {
       .datum(currPage)
       .each(function(d) {
         var p = parseInt(d);
-        console.log("Rendering page: " + p);
+        // console.log("Rendering page: " + p);
         // Fetch and render currPage
         var canvas = document.getElementById('pdf-canvas');
 
@@ -505,7 +579,7 @@ function update() {
     // Reposition main pdf canvas
     currRect = d3.selectAll('rect').filter(function(d,i) {return i == currPage;});
 
-    console.log("rect pre: " + currRect);
+    // console.log("rect pre: " + currRect);
     d3.select('#pdf-container')
       .style('left', canvasLeft(currRect))
       .style('top', canvasTop(currRect));
@@ -517,6 +591,10 @@ function update() {
         d.thumb.style('left', canvasLeft(p))
         d.thumb.style('top', canvasTop(p));
       });
+
+    // Add query highlights for each thumbnail
+    matches = queryWords(queries);
+    console.dir(matches);
 
   }
 
