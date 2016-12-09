@@ -307,8 +307,8 @@ function extractText()
         // For each word, document which pages it appears in and where on the page
         for(var j = 0; j < lines.length; j++)
         {
-          lines[j].split(" ").forEach(function(raw_word) {
-            if(!raw_word) return;
+          lines[j].split(/\s+/).forEach(function(raw_word) {
+            // if(!raw_word) return;
             w = cleanWord(raw_word);
             if(w === "") return;
             // console.log(w);
