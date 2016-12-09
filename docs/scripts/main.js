@@ -123,6 +123,7 @@ function readPDF(data) {
     setNpages(doc.numPages);
     pdf = doc;
     generateThumbnails();
+    extractText();
     currPage = 0;
     update();
   })
@@ -169,6 +170,28 @@ function generateThumbnails()
           this.render();
         });
       });
+  }
+}
+
+function extractText()
+{
+  console.log("Extracting text...");
+  for(var i = 0; i < npages; i++)
+  {
+    pdf.getPage(i+1).then(function(page) {
+      page.getTextContent().then(function(textContent) {
+        // console.log(page.pageIndex + ": " + pages);
+        pages[page.pageIndex].text = textContent;
+
+        // Extract raw text from all of the objects so it's easier to work with
+        var lines = []
+        textContent.items.forEach(function(t) { lines.push(t.str); });
+        var rawText = lines.join("");
+        console.log(page.pageIndex + ": " + rawText);
+
+        pages[page.pageIndex].rawText = rawText;
+      })
+    })
   }
 }
 
@@ -255,7 +278,9 @@ function setNpages(n)
       pages.push({
         index: i,
         thumb: null,
-        img: null
+        img: null,
+        text: null,
+        rawText: null
       });
     }
   }
@@ -406,6 +431,7 @@ function update() {
 
             // After rendering page, render text layer on top
             p.page.getTextContent().then(function(textContent) {
+              console.log("page " + p.index + " text: " + textContent);
               var textLayer = new TextLayerBuilder({
                 textLayerDiv: document.getElementById("pdf-text"),
                 pageIndex: p.index,
