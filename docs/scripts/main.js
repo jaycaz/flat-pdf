@@ -271,7 +271,7 @@ function extractText()
             if(!raw_word) return;
             w = cleanWord(raw_word);
             if(w === "") return;
-            console.log(w);
+            // console.log(w);
 
             if(!words[w]) {
               words[w] = []
@@ -480,7 +480,6 @@ function getPageH(d,i)
 }
 
 function update() {
-
   var selection = svg.selectAll('rect')
     .data(pages);
 
@@ -491,6 +490,9 @@ function update() {
       d3.select(this)
         .style('fill', '#008ae6');
       pages[i].thumb
+        .style('visibility', 'hidden');
+      svg.selectAll('highlight')
+        .filter('.page-' + i)
         .style('visibility', 'hidden');
       svg.append('text')
         .attr('id', 'hover-num')
@@ -504,17 +506,20 @@ function update() {
         .text(i+1);
       currRect.style('fill', '#008ae6')
       // previewPage = i;
-      update();
+      // update();
     })
     .on('mouseout', function(d, i) {
       d3.select(this)
         .style('fill', '#e2e3e3');
       pages[i].thumb
         .style('visibility', 'visible');
+      svg.selectAll('highlight')
+        .filter('.page-' + i)
+        .style('visibility', 'visible');
       svg.select('#hover-num').remove();
       currRect.style('fill', '#e2e3e3')
       // previewPage = null;
-      update();
+      // update();
     })
     .on('click', function(d,i) {
       currPage = i;
@@ -599,15 +604,14 @@ function update() {
       .enter()
       .append('rect')
       .attr('id', (d,i) => 'match-' + i)
-      .attr('class', 'highlight')
+      .attr("class", (d,i) => "highlight page-" + d.page)
       .attr('x', d => getPageX(d,d.page))
       .attr('y', d => getPageY(d,d.page) + (d.region / QUERY_REGIONS_PER_PAGE) * getPageH(d,d.page))
       .attr('width', d => getPageW(d,d.page))
       .attr('height', d => 5)
       .style('z-index', 2)
       .style('pointer-events', 'none');
-  }
-
+    }
 }
 
 var colors = [
