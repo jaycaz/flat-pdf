@@ -7,7 +7,7 @@ Dropzone.options.pdfDropzone = {
   paramName: "file", // The name that will be used to transfer the file
   clickable: false,
   maxFilesize: 100, // MB
-  dictDefaultMessage: "Upload any PDF to make it into a scroll",
+  dictDefaultMessage: "Upload any PDF to flatten it",
   previewTemplate: '<div></div>',
   init: function() {
     this.on("dragenter", function(e) {drop.select('div').style('color', '#008ae6')});
@@ -67,17 +67,24 @@ var FULL_PAGE_HEIGHT = 1060;
 var SCROLL_SENSITIVITY = 2.0;
 
 // Create PDF canvas for placement
-var canvas = d3.select("#viz")
+var pdfContainer = d3.select("#viz")
   .append('div')
   .attr("id", "pdf-container")
   .style("position", "absolute")
   .style("left", "0")
   .style("top", "0")
   .style("display", "inline-block")
-  .style("z-index", "1")
-  .append("canvas")
+  .style("z-index", "1");
+
+// Canvas for rendering page img
+var canvas = pdfContainer.append("canvas")
   .attr("id", "pdf-canvas")
   .style("padding", "2px");
+
+// Element to store rendered text
+var pdfText = pdfContainer.append("div")
+  .attr("id", "pdf-text")
+  .attr("class", "textLayer");
 
 var svg = d3.select("#viz")
   .append("svg")
@@ -147,15 +154,16 @@ function generateThumbnails()
       .style('pointer-events', 'none');
 
     var c = document.getElementById('thumbnail-canvas-' + i);
-    console.log('canvas: ' + c);
+    // console.log('canvas: ' + c);
     pages[i].thumb = thumbCanvas;
 
-    renderPage(i, c, {width: PAGE_WIDTH, height: PAGE_HEIGHT, scrollY:0}, function(i) {
-        pages[i].img = c.toDataURL();
+    renderPage(i, c, {width: PAGE_WIDTH, height: PAGE_HEIGHT, scrollY:0}, function(p) {
+        // console.dir(p);
+        pages[p.index].img = c.toDataURL();
         // console.log("Img[" + i + "]: " + pages[i].img);
 
         // Adjust image for better clarity at small scales
-        Caman('#thumbnail-canvas-'+i, function() {
+        Caman('#thumbnail-canvas-'+p.index, function() {
           this.exposure(50);
           this.saturation(75);
           this.render();
@@ -164,18 +172,25 @@ function generateThumbnails()
   }
 }
 
+function getPDFViewport(page, dims)
+{
+  //Resize PDF viewport to fit canvas
+  //TODO: Make the border not a magic number
+  var viewport = page.getViewport(1);
+  sw = (dims.width - 4) / viewport.width;
+  sh = (dims.height - 4) / viewport.height;
+  viewport = page.getViewport(Math.min(sw,sh));
+
+  return viewport;
+}
+
 // Render page number p on a particular canvas with particular dimensions {width, height}
 function renderPage(p, canvas, dims, afterRendered)
 {
   pdf.getPage(p+1) // Pages are one-indexed in PDFJS
   .then(function (page) {
 
-    //Resize PDF viewport to fit canvas
-    //TODO: Make the border not a magic number
-    var viewport = page.getViewport(1);
-    sw = (dims.width - 4) / viewport.width;
-    sh = (dims.height - 4) / viewport.height;
-    viewport = page.getViewport(Math.min(sw,sh));
+    viewport = getPDFViewport(page, dims);
 
     // TODO: Work with d3 selections instead of jquery, i.e. canvas.attr?
     canvas.height = viewport.height
@@ -183,9 +198,9 @@ function renderPage(p, canvas, dims, afterRendered)
     var context = canvas.getContext('2d');
     // context.clearRect(0, 0, canvas.width, canvas.height);
     context. setTransform(1, 0, 0, 1, 0, 0);
-    context.translate(0, dims.scrollY);
-    var pageTimestamp = new Date().getTime();
-    var timestamp = pageTimestamp;
+    context.translate(0, scrollY);
+    // var pageTimestamp = new Date().getTime();
+    // var timestamp = pageTimestamp;
     var renderContext = {
       canvasContext: context,
       viewport: viewport
@@ -201,7 +216,7 @@ function renderPage(p, canvas, dims, afterRendered)
     render.promise.then(function() {
       if(afterRendered)
       {
-        afterRendered(p);
+        afterRendered({index: p, page: page});
       }
     })
   })
@@ -386,9 +401,22 @@ function update() {
         // }
         // else
         // {
-          renderPage(p, canvas, {width: FULL_PAGE_WIDTH, 
-                                 height: FULL_PAGE_HEIGHT, 
-                                 scrollY: scrollY});
+          var dims = {width: FULL_PAGE_WIDTH, height: FULL_PAGE_HEIGHT, scrollY: scrollY}
+          renderPage(p, canvas, dims, function(p) {
+
+            // After rendering page, render text layer on top
+            p.page.getTextContent().then(function(textContent) {
+              var textLayer = new TextLayerBuilder({
+                textLayerDiv: document.getElementById("pdf-text"),
+                pageIndex: p.index,
+                viewport: getPDFViewport(p.page, dims)
+              });
+              textLayer.setTextContent(textContent);
+              textLayer.render();
+                // .then(function() {console.log("text rendered!")})
+                // .catch(function() {console.error("text could not be rendered")});
+              });
+           });
         // }
       });
 
