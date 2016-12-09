@@ -58,7 +58,9 @@ var currRect;
 
 // Global variables for page dimensions
 // I know this is probably not the JS way to do it, sue me
-var PAGE_WIDTH = 29;
+var PAGE_WIDTH = 40;
+var PAGE_WIDTH_PADDING = 5;
+var PAGE_HEIGHT_PADDING = 2;
 var PAGE_HEIGHT = 37;
 var PAGE_SHIFT_X = 40;
 var PAGE_SHIFT_Y = 35;
@@ -84,7 +86,10 @@ var pdfContainer = d3.select("#viz")
 // Canvas for rendering page img
 var canvas = pdfContainer.append("canvas")
   .attr("id", "pdf-canvas")
-  .style("padding", "2px");
+  .style('padding-left', PAGE_WIDTH_PADDING + "px")
+  .style('padding-right', PAGE_WIDTH_PADDING + "px")
+  .style('padding-top', PAGE_HEIGHT_PADDING + "px")
+  .style('padding-bottom', PAGE_HEIGHT_PADDING + "px");
 
 // Element to store rendered text
 var pdfText = pdfContainer.append("div")
@@ -192,7 +197,10 @@ function generateThumbnails()
       .append('canvas')
       .attr('id', 'thumbnail-canvas-' + i)
       .style('position', 'absolute')
-      .style('padding-left', "2px")
+      .style('padding-left', PAGE_WIDTH_PADDING + "px")
+      .style('padding-right', PAGE_WIDTH_PADDING + "px")
+      .style('padding-top', PAGE_HEIGHT_PADDING + "px")
+      .style('padding-bottom', PAGE_HEIGHT_PADDING + "px")
       .style('pointer-events', 'none');
 
     var c = document.getElementById('thumbnail-canvas-' + i);
@@ -207,7 +215,7 @@ function generateThumbnails()
         // Adjust image for better clarity at small scales
         Caman('#thumbnail-canvas-'+p.index, function() {
           this.exposure(50);
-          this.saturation(75);
+          this.saturation(-50);
           this.render();
         });
       });
@@ -295,7 +303,7 @@ function extractText()
   }
 }
 
-// Perform a query on the doc using the given word
+// Perform a query on the doc using the given words
 // Add a copy of the word's index for each occurrence
 function queryWords(queries) {
 
@@ -322,13 +330,50 @@ function queryWords(queries) {
   return matches;
 }
 
+// Perform a query on the doc using the given words
+// Return a score for unique words matching on a page
+function scorePages(queries) {
+
+  scores = [];
+  for(var i = 0; i < npages; i++)
+  {
+    scores.push({
+      page: i,
+      score: 0
+    })
+  }
+
+  for(var i = 0; i < queries.length; i++)
+  {
+    score_i = new Array(npages);
+    score_i.fill(0);
+
+    w = queries[i]
+    if(!words[w])
+    {
+      continue;
+    }
+
+    words[w].forEach(function(appearance) {
+      score_i[appearance.page] = 1;
+    });
+
+    for(var j = 0; j < scores.length; j++)
+    {
+      scores[j].score += score_i[j];
+    }
+  }
+
+  return scores;
+}
+
 function getPDFViewport(page, dims)
 {
   //Resize PDF viewport to fit canvas
   //TODO: Make the border not a magic number
   var viewport = page.getViewport(1);
-  sw = (dims.width - 4) / viewport.width;
-  sh = (dims.height - 4) / viewport.height;
+  sw = (dims.width - 2*PAGE_WIDTH_PADDING) / viewport.width;
+  sh = (dims.height - 2*PAGE_HEIGHT_PADDING) / viewport.height;
   viewport = page.getViewport(Math.min(sw,sh));
 
   return viewport;
@@ -498,7 +543,7 @@ function update() {
         .attr('id', 'hover-num')
         .attr('x', getPageX(d,i) + getPageW(d,i) / 2)
         .attr('y', getPageY(d,i) + getPageH(d,i) / 2)
-        .style('font-size', 12)
+        .style('font-size', 16)
         .style('cursor', 'default')
         .attr('text-anchor', 'middle')
         .style('fill', '#e2e3e3')
@@ -595,25 +640,31 @@ function update() {
       });
 
     // Add query highlights for each thumbnail
-    matches = queryWords(queries);
+    // matches = queryWords(queries);
+    scores = scorePages(queries);
+    console.dir(scores);
     // console.dir(matches);
 
     // svg.selectAll('.highlight').remove();
     svg.selectAll('.highlight')
-      .data(matches)
+      // .data(matches)
+      .data(scores)
       .enter()
       .append('rect')
       .attr('id', (d,i) => 'match-' + i)
       .attr("class", (d,i) => "highlight page-" + d.page)
       .attr('x', d => getPageX(d,d.page))
-      .attr('y', d => getPageY(d,d.page) + (d.region / QUERY_REGIONS_PER_PAGE) * getPageH(d,d.page))
-      .attr('width', d => getPageW(d,d.page))
-      .attr('height', d => 5)
+      // .attr('y', d => getPageY(d,d.page) + (d.region / QUERY_REGIONS_PER_PAGE) * getPageH(d,d.page))
+      .attr('y', d => getPageY(d,d.page))
+      .attr('width', d => getPageW(d,d.page) - PAGE_WIDTH_PADDING)
+      // .attr('height', d => 5)
+      .attr('height', d => getPageH(d,d.page))
       .style('z-index', 2)
+      // .style('fill', (d,i) => colors[d.word % colors.length])
+      .style('fill', (d,i) => colors[Math.min(d.score, queries.length)])
+      .style('opacity', (d,i) => d.score == 0 ? 0.0 : 1.0)
       .style('pointer-events', 'none');
     }
 }
 
-var colors = [
-
-]
+var colors = ["#ffffcc","#fed976","#feb24c","#fd8d3c","#fc4e2a","#e31a1c","#bd0026","#800026"]
