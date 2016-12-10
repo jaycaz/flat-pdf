@@ -144,6 +144,7 @@ d3.select('body')
   })
   .on("keydown", function() {
     // Keypress will add on to the last query word
+    d3.event.stopPropagation();
     var c = String.fromCharCode(d3.event.keyCode).toLowerCase();
     if((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z'))
     {
@@ -152,7 +153,7 @@ d3.select('body')
 
     // Backspace will delete characters from the last entry, and subsequent
     // entries if user keeps pressing it
-    if(d3.event.keyCode === 8)
+    if(d3.event.keyCode === 8 || d3.event.keyCode === 46)
     {
       if(queries[queries.length-1] !== '')
       {
@@ -407,7 +408,11 @@ function scorePages(queries) {
   for(var i = 0; i < queries.length; i++)
   {
     score_i = new Array(npages);
-    score_i.fill(0);
+    for(var j = 0; j < npages; j++)
+    {
+      score_i[j] = 0;
+    }
+    // score_i.fill(0);
 
     w = queries[i]
     if(!words[w])
@@ -727,23 +732,23 @@ function updateMarks() {
       .data(scores)
       .enter()
       .append('rect')
-      .attr('id', (d,i) => 'match-' + i)
-      .attr("class", (d,i) => "highlight page-" + d.page)
-      .attr('x', d => getPageX(d,d.page))
-      // .attr('y', d => getPageY(d,d.page) + (d.region / QUERY_REGIONS_PER_PAGE) * getPageH(d,d.page))
-      .attr('y', d => getPageY(d,d.page))
-      .attr('width', d => getPageW(d,d.page) - PAGE_WIDTH_PADDING)
-      // .attr('height', d => 5)
-      .attr('height', d => getPageH(d,d.page))
+      .attr('id', function(d,i) { return 'match-' + i;})
+      .attr("class", function(d,i) { return "highlight page-" + d.page;})
+      .attr('x', function(d) { return getPageX(d,d.page);})
+      // .attr('y', function(d) { return getPageY(d,d.page) + (d.region / QUERY_REGIONS_PER_PAGE) * getPageH(d,d.page))
+      .attr('y', function(d) { return getPageY(d,d.page);})
+      .attr('width', function(d) { return getPageW(d,d.page) - PAGE_WIDTH_PADDING;})
+      // .attr('height', function(d) { return 5)
+      .attr('height', function(d) { return getPageH(d,d.page);})
       .style('z-index', 2)
-      // .style('fill', (d,i) => colors[d.word % colors.length])
-      .style('fill', (d,i) => colors[Math.min(d.score, queries.length)])
-      .style('opacity', (d,i) => d.score == 0 ? 0.0 : 1.0)
+      // .style('fill', function(d,i) { return colors[d.word % colors.length];})
+      .style('fill', function(d,i) { return colors[Math.min(d.score, queries.length)];})
+      .style('opacity', function(d,i) { return d.score == 0 ? 0.0 : 1.0;})
       .style('pointer-events', 'none');
 
     d3.select('#queries')
       .datum(queries)
-      .text(d => " " + d.join(" "));
+      .text(function(d) { return " " + d.join(" ");});
     }
 
     d3.select('#visited-pages')
