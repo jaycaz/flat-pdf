@@ -127,20 +127,36 @@ d3.select('body')
     }
     dy = d3.event.wheelDeltaY * SCROLL_SENSITIVITY;
     scrollY += dy;
-    if(scrollY < -FULL_PAGE_HEIGHT && currPage < npages-1)
+
+    // Scrolling out of bounds triggers the next/prev page, if any
+    if(scrollY < -FULL_PAGE_HEIGHT)
     {
       scrollY = 0;
-      currPage++;
-      visitedPages[visitedPtr]++;
+      if(currPage < npages-1)
+      {
+        currPage++;
+        visitedPages[visitedPtr]++;
+        update();
+      }
     }
-    if(scrollY > FULL_PAGE_HEIGHT && currPage > 0)
+    if(scrollY > FULL_PAGE_HEIGHT)
     {
       scrollY = 0;
-      currPage--;
-      visitedPages[visitedPtr]--;
+      if(currPage > 0)
+      {
+        currPage--;
+        visitedPages[visitedPtr]--;
+        update();
+      }
     }
-    console.log('scrollY: ' + scrollY);
-    update();
+
+    var vizTop = $('#viz').offset().top;
+    var c = d3.select('#pdf-container')
+
+    console.log('top: ' + (vizTop + scrollY) + 'px');
+
+    c.style('top', (vizTop + scrollY) + 'px');
+    // update();
   })
   .on("keydown", function() {
     // Keypress will add on to the last query word
